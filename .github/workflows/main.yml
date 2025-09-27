@@ -33,7 +33,7 @@ jobs:
 
   deploy:
     name: Deploy to Minikube
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: build-and-push
     steps:
       - name: Pre-deployment Checklist
@@ -52,11 +52,6 @@ jobs:
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
-
-      - name: Start Minikube and ensure context is correct
-        run: |
-          # This command starts minikube if not running and updates the kubeconfig context.
-          minikube start
 
       - name: Install cert-manager
         run: |
