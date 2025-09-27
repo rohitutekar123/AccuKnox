@@ -1,0 +1,68 @@
+name: CI/CD for Wisecow Application
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/wisecow:${{ github.sha }},${{ secrets.DOCKERHUB_USERNAME }}/wisecow:latest
+
+  deploy:
+    name: Deploy to Minikube
+    runs-on: ubuntu-latest
+    needs: build-and-push
+    steps:
+      - name: Pre-deployment Checklist
+        run: |
+          echo "===== Prerequisites for Wisecow Deployment ====="
+          echo "1. cert-manager is installed and configured in your Minikube cluster."
+          echo "2. The correct ClusterIssuer and TLS secret are referenced in your ingress manifest."
+          echo "3. DNS is configured to point to your ingress controller (if testing Let's Encrypt)."
+          echo "================================================"
+
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kubeconfig from Secret
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: Update Deployment Image Tag
+        run: |
+          sed -i "s|image: .*/wisecow:.*|image: ${{ secrets.DOCKERHUB_USERNAME }}/wisecow:${{ github.sha }}|g" k8s/deployment.yaml
+
+      - name: Deploy to Minikube
+        run: |
+          # Apply all manifests from the k8s directory.
+          # This is more robust as it ensures all resources are synchronized.
+          kubectl apply -f k8s/
+
+      - name: Check rollout status
+        run: |
+          kubectl rollout status deployment/wisecow-deployment -n wisecow
