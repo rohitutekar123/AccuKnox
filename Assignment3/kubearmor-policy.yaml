@@ -1,0 +1,44 @@
+# /home/rohit/Downloads/wisecow-main-main/k8s/kubearmor-policy.yaml
+apiVersion: security.kubearmor.com/v1
+kind: KubeArmorPolicy
+metadata:
+  name: wisecow-zero-trust-policy
+  namespace: default
+spec:
+  severity: 10
+  selector:
+    matchLabels:
+      app: wisecow
+
+  process:
+    matchPaths:
+    # Allow the node binary to be executed
+    - path: /usr/bin/node 
+    # The wisecow app uses cowsay and fortune
+    - path: /usr/games/cowsay 
+    - path: /usr/games/fortune
+    action: Allow
+
+  file:
+    matchPaths:
+    # Allow read access to the application and its dependencies
+    - path: /app/app.js
+    - path: /app/node_modules
+    - path: /usr/share/games/fortunes
+    - path: /etc/localtime
+    action: Allow
+
+  network:
+    matchProtocols:
+    # Allow TCP traffic for the web server
+    - protocol: tcp
+    action: Allow
+
+  capabilities:
+    # Allow necessary capabilities for node/network
+    matchCapabilities:
+    - capability: net_bind_service
+    action: Allow
+
+  # Default-deny: Block everything else
+  action: Block
