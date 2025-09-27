@@ -53,9 +53,10 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | base64 --decode > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
 
-      - name: Update Kubeconfig context for Minikube
+      - name: Start Minikube and ensure context is correct
         run: |
-          minikube update-context
+          # This command starts minikube if not running and updates the kubeconfig context.
+          minikube start
 
       - name: Update Deployment Image Tag
         run: |
