@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wisecow-ingress
+  namespace: wisecow
+  annotations:
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"   # tells cert-manager which issuer to use
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"      # force HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  ingressClassName: nginx   # modern way to bind ingress controller
+  tls:
+  - hosts:
+      - wisecow.local       # local domain for Minikube/Kind
+    secretName: wisecow-tls-secret
+  rules:
+  - host: wisecow.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wisecow-service
+            port:
+              number: 80

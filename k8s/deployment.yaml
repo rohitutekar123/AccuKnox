@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: wisecow
+  name: wisecow-deployment
+  labels:
+    app: wisecow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wisecow
+  template:
+    metadata:
+      labels:
+        app: wisecow
+      annotations:
+        # This annotation explicitly enables KubeArmor protection for this pod
+        kubearmor.io/policy: enabled
+    spec:
+      containers:
+      - name: wisecow
+        # Replace YOUR_DOCKERHUB_USERNAME with your actual Docker Hub username
+        # The image tag will be updated by the CI/CD pipeline
+        image: rohitutekar123/wisecow:latest
+        ports:
+        - containerPort: 4499
